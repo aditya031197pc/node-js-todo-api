@@ -15,7 +15,7 @@ app.use(bodyParser.json());
 // we can now send json to our application
 
 app.post('/todos', (req, res) => {
-    console.log(req.body);
+    // console.log(req.body);
     let newTodo = new Todo({
         text: req.body.text
     });
@@ -30,3 +30,5 @@ app.post('/todos', (req, res) => {
 
 
 app.listen(3000, () => { console.log('Server running at port ' + 3000); });
+
+module.exports = {app};
