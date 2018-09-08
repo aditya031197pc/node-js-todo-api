@@ -14,6 +14,8 @@ app.use(bodyParser.json());
 // return value of .json is a funciton that is actually used as a middleware
 // we can now send json to our application
 
+
+// creating a todo on a post request
 app.post('/todos', (req, res) => {
     // console.log(req.body);
     let newTodo = new Todo({
@@ -28,6 +30,15 @@ app.post('/todos', (req, res) => {
 
 });
 
+
+// returning all todos using get request
+    app.get('/todos', (req, res) => {
+        Todo.find().then(todos => {
+            res.send({todos});
+        }, err => {
+            res.status(400).send(err);
+        });
+    });
 
 app.listen(3000, () => { console.log('Server running at port ' + 3000); });
 
