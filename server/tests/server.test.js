@@ -1,24 +1,28 @@
 const expect = require('expect');
 const request = require('supertest');
+const {ObjectID} = require('mongodb');
 
 const { app } = require('./../server');
 const { Todo } = require('./../models/todo.model');
 
-const dummyTodos = [
-    { text: "dummy todo one" },
-    { text: "dummy todo two" }
-];
+const todos = [{
+    _id: new ObjectID(),
+    text: "dummy todo one"
+}, {
+    _id: new ObjectID(),
+    text: "dummy todo two"
+}];
 
 //testing life cycle method beforeEach is used to run some code before each test case is executed
 // eg in this case it is used to empty the database before each test
 
 beforeEach((done) => { // done is required for async tasks
     Todo.remove({})
-        .then(() => Todo.insertMany(dummyTodos)) // tweaking the db for testing GET /todos route
+        .then(() => Todo.insertMany(todos)) // tweaking the db for testing GET /todos route
         .then(() => done()); // method to remove all the docs in Todo collection
 });
 
-// describe block groups helps us quicly glance through the test in groups
+// describe block groups helps us quicKly glance through the test in groups
 
 describe('POST /todos', () => {
 
@@ -88,5 +92,34 @@ describe('GET /todos', () => {
             })
             .end(done);
         // since we are not doing anything asynchronously like retrieving data from database, we can call done here
+    });
+});
+
+// const validID = '5b942dd08e86bac4172d494f';
+// const invalidID = '123';
+
+describe('GET /todos/:id', () => {
+    it('should return 404 invalid Id', (done) => {
+        request(app)
+            .get(`/todos/123`) // toHExString converts the objectId into a plain string
+            .expect(404)
+            .end(done);
+    });
+
+    it('should return 404 for not found', (done) => {
+        const id = new ObjectID();
+        request(app)
+        .get(`/todos/${id}`)
+        .expect(404)
+        .end(done);
+    });
+
+    it('should return a todo', (done) => {
+        request(app)
+        .get(`/todos/${todos[0]._id.toHexString()}`)
+        .expect(200)
+        .expect(res => {
+            expect(res.body.todo.text).toBe(todos[0].text);
+        }).end(done);
     });
 });
