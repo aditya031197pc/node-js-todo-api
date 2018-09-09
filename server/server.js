@@ -1,5 +1,6 @@
 const express = require('express');
 const bodyParser = require('body-parser');
+const {ObjectID} = require('mongodb');
 
 const { mongoose } = require('./db/mongoose');
 let { Todo } = require('./models/todo.model');
@@ -21,7 +22,7 @@ app.post('/todos', (req, res) => {
     let newTodo = new Todo({
         text: req.body.text
     });
-    
+
     newTodo.save().then((doc) => {
         res.send(doc);
     }, (err) => {
@@ -32,14 +33,34 @@ app.post('/todos', (req, res) => {
 
 
 // returning all todos using get request
-    app.get('/todos', (req, res) => {
-        Todo.find().then(todos => {
-            res.send({todos});
-        }, err => {
-            res.status(400).send(err);
-        });
+app.get('/todos', (req, res) => {
+    Todo.find().then(todos => {
+        res.send({ todos });
+    }, err => {
+        res.status(400).send(err);
     });
+});
+
+
+// handling a request for a particular todo by its id
+
+app.get('/todos/:id', (req, res) => {
+    const id = req.params.id;
+
+    if(!ObjectID.isValid(id)) {
+        // if the objectID requested is invalid
+        return res.status(404).send(); // we send nothing back here
+    } 
+    Todo.findById(id).then((todo) => {
+        if(!todo) {
+            // if id does not exist in Database
+            return res.status(404).send({}); // we send an empty object here
+        }
+        // if the id exists
+        res.send({todo});
+    }).catch(e => res.status(400).send());
+});
 
 app.listen(3000, () => { console.log('Server running at port ' + 3000); });
 
-module.exports = {app};
+module.exports = { app };
