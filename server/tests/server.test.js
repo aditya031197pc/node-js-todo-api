@@ -87,6 +87,6 @@ describe('GET /todos', () => {
                 expect(res.body.todos.length).toBe(2); // res.body object has a key todos that contains the todos array
             })
             .end(done);
-        // since we are not doing anything asynchronously like retrieving data from dtabase, we can call done here
+        // since we are not doing anything asynchronously like retrieving data from database, we can call done here
     });
 });
