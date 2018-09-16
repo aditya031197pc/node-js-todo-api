@@ -10,7 +10,9 @@ const todos = [{
     text: "dummy todo one"
 }, {
     _id: new ObjectID(),
-    text: "dummy todo two"
+    text: "dummy todo two",
+    completed: true,
+    completedAt: 333
 }];
 
 //testing life cycle method beforeEach is used to run some code before each test case is executed
@@ -156,6 +158,44 @@ describe('DELETE /todos/:id', () => {
         request(app)
         .delete(`/todos/${id}`)
         .expect(404)
+        .end(done);
+    });
+});
+
+describe('PATCH /todos/:id', () => {
+    it('should update the todo to completed', (done) => {
+         const id = todos[0]._id.toHexString();
+         const newText = "This is new"
+        request(app)
+        .patch(`/todos/${id}`)
+        .send({
+            completed: true,
+            text: newText
+        })
+        .expect(200)
+        .expect( res => {
+          expect(res.body.todo.completed).toBe(true);
+          expect(res.body.todo.text).toBe(newText);
+          expect(res.body.todo.completedAt).toBeA('number');
+        })
+        .end(done);
+    });
+
+    it('should update todo to incomplete', (done) => {
+        const id = todos[1]._id.toHexString();
+         const newText = "This is new text"
+        request(app)
+        .patch(`/todos/${id}`)
+        .send({
+            completed: false,
+            text: newText
+        })
+        .expect(200)
+        .expect( res => {
+          expect(res.body.todo.completed).toBe(false);
+          expect(res.body.todo.text).toBe(newText);
+          expect(res.body.todo.completedAt).toBe(null);
+        })
         .end(done);
     });
 });

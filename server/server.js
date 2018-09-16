@@ -1,3 +1,4 @@
+require('./config/config');
 const _ = require('lodash');
 const express = require('express');
 const bodyParser = require('body-parser');
@@ -7,7 +8,7 @@ const { mongoose } = require('./db/mongoose');
 const { Todo } = require('./models/todo.model');
 const { User } = require('./models/user.model');
 
-const port = process.env.PORT || 3000;  // this is to set up the port for heroku
+const port = process.env.PORT;  // this is to set up the port for heroku
 
 const app = express();
 
@@ -83,13 +84,13 @@ app.delete('/todos/:id', (req, res) => {
 
 app.patch('/todos/:id', (req, res) => {
     const id  = req.params.id;
-    const body = _.pick(req.body, ['text','completed']);
+    const body = _.pick(req.body, ['text','completed']); // the user can only modify these properties
     if(!ObjectID.isValid(id)) {
         return res.status(404).send();
     }
 
     if(_.isBoolean(body.completed) && body.completed) {
-        body.completedAt = new Date().getTime();
+        body.completedAt = new Date().getTime(); // the time is set when the request is sent
     } else {
         body.completed = false;
         body.completedAt = null;
