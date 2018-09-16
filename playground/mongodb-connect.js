@@ -2,7 +2,7 @@ const {MongoClient, ObjectID} = require('mongodb');
 
 
 // here first one might be an amazon web services url or heroku url
-MongoClient.connect(`'mongodb://localhost:27017/ToDoApp'`,(err, db) => {
+MongoClient.connect('mongodb://demotodoappuser:2doapi@ds139919.mlab.com:39919/todoapp',(err, db) => {
     if(err) {
       return console.log('unable to connect to the mongoDB server');
     }

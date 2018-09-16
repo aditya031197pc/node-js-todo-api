@@ -63,6 +63,23 @@ app.get('/todos/:id', (req, res) => {
     }).catch(e => res.status(400).send());
 });
 
+app.delete('/todos/:id', (req, res) => {
+    const id = req.params.id;
+
+    if(!ObjectID.isValid(id)) {
+        // if the objectID requested is invalid
+        return res.status(404).send(); // we send nothing back here
+    } 
+    Todo.findByIdAndRemove(id).then((todo) => {
+        if(!todo) {
+            // if id does not exist in Database
+            return res.status(404).send({}); // we send an empty object here
+        }
+        // if the id exists
+        res.send({todo});
+    }).catch(e => res.status(400).send());
+});
+
 app.listen(port, () => { console.log('Server running at port ' + port); });
 
 module.exports = { app };
