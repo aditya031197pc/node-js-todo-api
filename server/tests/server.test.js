@@ -17,9 +17,9 @@ const todos = [{
 // eg in this case it is used to empty the database before each test
 
 beforeEach((done) => { // done is required for async tasks
-    Todo.remove({})
+    Todo.remove({}) // method to remove all the docs in Todo collection
         .then(() => Todo.insertMany(todos)) // tweaking the db for testing GET /todos route
-        .then(() => done()); // method to remove all the docs in Todo collection
+        .then(() => done()); 
 });
 
 // describe block groups helps us quicKly glance through the test in groups

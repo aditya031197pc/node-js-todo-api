@@ -3,10 +3,12 @@ const bodyParser = require('body-parser');
 const {ObjectID} = require('mongodb');
 
 const { mongoose } = require('./db/mongoose');
-let { Todo } = require('./models/todo.model');
-let { User } = require('./models/user.model');
+const { Todo } = require('./models/todo.model');
+const { User } = require('./models/user.model');
 
-let app = express();
+const port = process.env.PORT || 3000;  // this is to set up the port for heroku
+
+const app = express();
 
 // body parser is a middleware that takes JSON and converts it to object for attaching on to the req object
 // app.use is used to configure middleware
@@ -61,6 +63,6 @@ app.get('/todos/:id', (req, res) => {
     }).catch(e => res.status(400).send());
 });
 
-app.listen(3000, () => { console.log('Server running at port ' + 3000); });
+app.listen(port, () => { console.log('Server running at port ' + port); });
 
 module.exports = { app };
