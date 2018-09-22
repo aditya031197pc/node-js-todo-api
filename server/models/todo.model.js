@@ -1,7 +1,7 @@
 const mongoose = require('mongoose');
 
 // creating a todo model
-const Todo = mongoose.model('Todo', {
+const TodoSchema = new mongoose.Schema({
     text: {
         type: String,
         // validations:
@@ -19,5 +19,6 @@ const Todo = mongoose.model('Todo', {
         default: null
     }
 });
+const Todo = mongoose.model('Todo', TodoSchema);
 
 module.exports = {Todo};
