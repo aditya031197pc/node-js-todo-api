@@ -47,15 +47,39 @@ UserSchema.methods.toJSON = function () { // we are overriding this function to 
 }
 
 UserSchema.methods.generateAuthToken = function () {
-    // const user = this;
+    const user = this;
     const access = 'auth'; // for web only 
-    const token = jwt.sign({ _id: this._id, access }, 'abc123').toString(); // token generated using the token id
+    const token = jwt.sign({ _id: user._id, access }, 'abc123').toString(); // token generated using the token id
 
     // pushing the token created to tokens array
     // access will be different for different platforms
-    this.tokens.push({ access, token });
-    return this.save()
+    user.tokens.push({ access, token });
+    return user.save()
         .then(() => token); // a token is returned this will be chained by a then call in server.js
+};
+
+// model methods are applied on the model as statics
+// the model methods get called by the entire model as 'this' binding
+UserSchema.statics.findByToken = function (token) {
+    const User = this;
+    let decoded; // initially set to undefined
+
+    try {
+        decoded = jwt.verify(token, 'abc123');
+    } catch (e) {
+        // return new Promise((resolve, reject) => {
+        //     reject(); // when the token is not verified, then() will never be called in server.js and we can handle the error in catch
+        // });
+
+        // a simpler way to implement above commented code
+        return Promise.reject(); // we can pass any arg to reject witch will be stored in 'e' in catch block in server.js
+    }
+    console.log(decoded);
+    return User.findOne({
+        '_id': decoded._id,
+        'tokens.token': token, // the '' way is used to find in nested objects
+        'tokens.access': 'auth'
+    }); // we are returning a promise to be handled in serverjs
 };
 
 const User = mongoose.model('User', UserSchema);

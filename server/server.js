@@ -7,6 +7,7 @@ const { ObjectID } = require('mongodb');
 const { mongoose } = require('./db/mongoose');
 const { Todo } = require('./models/todo.model');
 const { User } = require('./models/user.model');
+const { authenticate } = require('./middleware/authenticate');
 
 const port = process.env.PORT;  // this is to set up the port for heroku
 
@@ -65,6 +66,8 @@ app.get('/todos/:id', (req, res) => {
     }).catch(e => res.status(400).send());
 });
 
+// deleting a particular todo using its id
+
 app.delete('/todos/:id', (req, res) => {
     const id = req.params.id;
 
@@ -81,6 +84,8 @@ app.delete('/todos/:id', (req, res) => {
         res.send({ todo });
     }).catch(e => res.status(400).send());
 });
+
+// updating a todo only allowing text and completed field to be updated
 
 app.patch('/todos/:id', (req, res) => {
     const id = req.params.id;
@@ -104,13 +109,19 @@ app.patch('/todos/:id', (req, res) => {
 });
 
 // POST /users 
-
+// signing up a user
 app.post('/users', (req, res) => {
     const body = _.pick(req.body, ['email', 'password']);
     const user = new User(body);
     user.save().then(() => user.generateAuthToken()) // here we are returning a promise already chained with a then call instead of a promise
-    .then(token => res.header('x-auth', token).send(user))
-    .catch(e => res.status(400).send(e));
+        .then(token => res.header('x-auth', token).send(user))
+        .catch(e => res.status(400).send(e));
+});
+
+
+// GET /users/me  authenticating and getting the user back
+app.get('/users/me', authenticate, (req, res) => {
+    res.send(req.user);
 });
 
 app.listen(port, () => { console.log('Server running at port ' + port); });
