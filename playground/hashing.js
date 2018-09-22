@@ -35,19 +35,44 @@
 
 // console.log(data);
 
+
+
+
 // the above things can be implemented in a simpler way
 
-const jwt = require('jsonwebtoken');
+// const jwt = require('jsonwebtoken');
 
-const data = {
-    id: 4
-};
+// const data = {
+//     id: 4
+// };
 
-const token = jwt.sign(data, 'abc123'); // this is the token we send back to the user, 'abc123' is the secret
+// const token = jwt.sign(data, 'abc123'); // this is the token we send back to the user, 'abc123' is the secret
 
-const decoded = jwt.verify(token + '1', 'abc123'); // when the token is unaltered and the secret is correct only then will it pass
+// const decoded = jwt.verify(token + '1', 'abc123'); // when the token is unaltered and the secret is correct only then will it pass
 
-console.log('token', token);
-console.log('decoded', decoded);
+// console.log('token', token);
+// console.log('decoded', decoded);
 
 
+// bcrypt algorithm example with salting and hashing
+
+const bcrypt = require('bcryptjs');
+
+const password = 'abc123!';
+
+// salting a password simply means adding a random string to the password making it more secure
+
+// the more the rounds in gensalt the more time it takes to salt a password 
+// this is a good thing as it helps reduces the chances of brute force attack
+
+bcrypt.genSalt(10, (err, salt) => {
+    bcrypt.hash(password, salt, (err, hash) => {
+        console.log(hash);
+    });
+});
+
+const hashedPassword = '$2a$10$MBeJ72NP7mLitkH3EV.Rt.58nFc1qhXmOw0WVSsE0mYzCdnDY68bC';
+console.log(hashedPassword);
+bcrypt.compare(password, hashedPassword, (err, success) => {
+    console.log(success); //  this will return true for the plain password even if the salt is different everytime
+});

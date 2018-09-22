@@ -2,6 +2,7 @@ const mongoose = require('mongoose');
 const validator = require('validator');
 const jwt = require('jsonwebtoken');
 const _ = require('lodash');
+const bcrypt = require('bcryptjs');
 // creating a User Model
 
 const UserSchema = new mongoose.Schema({
@@ -12,7 +13,7 @@ const UserSchema = new mongoose.Schema({
         minlength: 1,
         unique: true, // so that existing email cannot be used again
         validate: [{ isAsync: false, validator: validator.isEmail, msg: 'Invalid email.' }]
-         // validator takes a function and passes the value to it and returns a boolean
+        // validator takes a function and passes the value to it and returns a boolean
     },
     password: {
         type: String,
@@ -74,13 +75,31 @@ UserSchema.statics.findByToken = function (token) {
         // a simpler way to implement above commented code
         return Promise.reject(); // we can pass any arg to reject witch will be stored in 'e' in catch block in server.js
     }
-    console.log(decoded);
     return User.findOne({
         '_id': decoded._id,
         'tokens.token': token, // the '' way is used to find in nested objects
         'tokens.access': 'auth'
     }); // we are returning a promise to be handled in serverjs
 };
+
+// mongoose middleware setup
+// the pre method takes an event and the function to be executed before the event
+UserSchema.pre('save', function (next) {
+    const user = this;
+    if (user.isModified('password')) { // isModified takes a property and checks whether that property has been modified
+        // we need to put this check so that if user changes something other than password
+        // without this check, we will hash the hashed password and our app may crash
+        const cryptPassword = bcrypt.genSalt(10, (err, salt) => {
+            bcrypt.hash(user.password, salt, (err, hash) => {
+                user.password = hash;
+                // now even if anyone gets access to this value, they would not be any closer to the real password
+                next();
+            });
+        });
+    } else {
+        next();
+    }
+});
 
 const User = mongoose.model('User', UserSchema);
 
