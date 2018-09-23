@@ -1,28 +1,18 @@
 const expect = require('expect');
 const request = require('supertest');
-const {ObjectID} = require('mongodb');
+const { ObjectID } = require('mongodb');
 
 const { app } = require('./../server');
 const { Todo } = require('./../models/todo.model');
+const { User } = require('./../models/user.model');
+const { todos, users, populateTodos, populateUsers } = require('./seed/seed');
 
-const todos = [{
-    _id: new ObjectID(),
-    text: "dummy todo one"
-}, {
-    _id: new ObjectID(),
-    text: "dummy todo two",
-    completed: true,
-    completedAt: 333
-}];
+
 
 //testing life cycle method beforeEach is used to run some code before each test case is executed
-// eg in this case it is used to empty the database before each test
-
-beforeEach((done) => { // done is required for async tasks
-    Todo.remove({}) // method to remove all the docs in Todo collection
-        .then(() => Todo.insertMany(todos)) // tweaking the db for testing GET /todos route
-        .then(() => done()); 
-});
+// eg in this case it is used to empty the database before each test and then add some dummy data
+beforeEach(populateUsers);
+beforeEach(populateTodos);
 
 // describe block groups helps us quicKly glance through the test in groups
 
@@ -111,91 +101,169 @@ describe('GET /todos/:id', () => {
     it('should return 404 for not found', (done) => {
         const id = new ObjectID();
         request(app)
-        .get(`/todos/${id}`)
-        .expect(404)
-        .end(done);
+            .get(`/todos/${id}`)
+            .expect(404)
+            .end(done);
     });
 
     it('should return a todo', (done) => {
         request(app)
-        .get(`/todos/${todos[0]._id.toHexString()}`)
-        .expect(200)
-        .expect(res => {
-            expect(res.body.todo.text).toBe(todos[0].text);
-        }).end(done);
+            .get(`/todos/${todos[0]._id.toHexString()}`)
+            .expect(200)
+            .expect(res => {
+                expect(res.body.todo.text).toBe(todos[0].text);
+            }).end(done);
     });
 });
 describe('DELETE /todos/:id', () => {
     const hexID = todos[0]._id.toHexString();
     it('should remove a todo', (done) => {
         request(app)
-        .delete(`/todos/${hexID}`)
-        .expect(200)
-        .expect( res => {
-            expect(res.body.todo._id).toBe(hexID);
-            done();
-        }).end((err, res) => {
-            if(err) {
-                return err;
-            }
+            .delete(`/todos/${hexID}`)
+            .expect(200)
+            .expect(res => {
+                expect(res.body.todo._id).toBe(hexID);
+                done();
+            }).end((err, res) => {
+                if (err) {
+                    return err;
+                }
 
-            Todo.findById(hexID, (todo) => {
-                expect(todo).toNotExist();
-            }).catch(e => done(e));
-        });
+                Todo.findById(hexID, (todo) => {
+                    expect(todo).toNotExist();
+                }).catch(e => done(e));
+            });
     })
 
     it('should return 404 if todo not found', (done) => {
         const id = new ObjectID();
         request(app)
-        .delete(`/todos/${id}`)
-        .expect(404)
-        .end(done);
+            .delete(`/todos/${id}`)
+            .expect(404)
+            .end(done);
     });
-    
+
     it('should return 404 if invalid id', (done) => {
         const id = 123;;
         request(app)
-        .delete(`/todos/${id}`)
-        .expect(404)
-        .end(done);
+            .delete(`/todos/${id}`)
+            .expect(404)
+            .end(done);
     });
 });
 
 describe('PATCH /todos/:id', () => {
     it('should update the todo to completed', (done) => {
-         const id = todos[0]._id.toHexString();
-         const newText = "This is new"
+        const id = todos[0]._id.toHexString();
+        const newText = "This is new"
         request(app)
-        .patch(`/todos/${id}`)
-        .send({
-            completed: true,
-            text: newText
-        })
-        .expect(200)
-        .expect( res => {
-          expect(res.body.todo.completed).toBe(true);
-          expect(res.body.todo.text).toBe(newText);
-          expect(res.body.todo.completedAt).toBeA('number');
-        })
-        .end(done);
+            .patch(`/todos/${id}`)
+            .send({
+                completed: true,
+                text: newText
+            })
+            .expect(200)
+            .expect(res => {
+                expect(res.body.todo.completed).toBe(true);
+                expect(res.body.todo.text).toBe(newText);
+                expect(res.body.todo.completedAt).toBeA('number');
+            })
+            .end(done);
     });
 
     it('should update todo to incomplete', (done) => {
         const id = todos[1]._id.toHexString();
-         const newText = "This is new text"
+        const newText = "This is new text"
         request(app)
-        .patch(`/todos/${id}`)
+            .patch(`/todos/${id}`)
+            .send({
+                completed: false,
+                text: newText
+            })
+            .expect(200)
+            .expect(res => {
+                expect(res.body.todo.completed).toBe(false);
+                expect(res.body.todo.text).toBe(newText);
+                expect(res.body.todo.completedAt).toBe(null);
+            })
+            .end(done);
+    });
+});
+
+describe('GET /users/me', () => {
+    it('should return user if authenticated', (done) => {
+        request(app)
+        .get('/users/me')
+        .set('x-auth', users[0].tokens[0].token ) //set method in supertest is used to set headers
+        .expect(200)
+        .expect((res) => {
+            expect(res.body._id).toBe(users[0]._id.toHexString());
+            expect(res.body.email).toBe(users[0].email);
+        })
+        .end(done);
+    });
+
+    it('should return a 401 if not authenticated', (done) => {
+        request(app)
+        .get('/users/me')
+        .expect(401)
+        .expect((res) => {
+            expect(res.body).toEqual({});
+        })
+        .end(done);
+    });
+});
+
+describe('POST /users', () => {
+    it('should create a user', (done) => {
+        const email = 'example@example.com';
+        const password = 'pass_word';
+        request(app)
+        .post('/users')
         .send({
-            completed: false,
-            text: newText
+            email,
+            password
         })
         .expect(200)
-        .expect( res => {
-          expect(res.body.todo.completed).toBe(false);
-          expect(res.body.todo.text).toBe(newText);
-          expect(res.body.todo.completedAt).toBe(null);
+        .expect((res) => {
+            expect(res.headers['x-auth']).toExist();
+            expect(res.body._id).toExist();
+            expect(res.body.email).toBe(email);
         })
+        .end((err) => {
+            if(err) {
+                return done(err);
+            }
+            User.findOne({email}).then((user) => {
+                expect(user).toExist();
+                expect(user.password).toNotBe(password);
+                done();
+            });
+        });
+    });
+
+    it('should return validation errors if request invalid', (done) => {
+        const email = 'email';
+        const password = '123';
+
+        request(app)
+        .post('/users')
+        .send({
+            email,
+            password
+        })
+        .expect(400)
+        .end(done);
+    });
+
+    it('should not create user if email in use', (done) => {
+        request(app)
+        .post('/users')
+        .send({
+            email: users[0].email,
+            password: users[0].password
+        })
+        .expect(400)
         .end(done);
     });
 });
