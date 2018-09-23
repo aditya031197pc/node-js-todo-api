@@ -31,7 +31,7 @@ const UserSchema = new mongoose.Schema({
         }
     }]
 }, {
-        usePushEach: true
+        usePushEach: true // needed to push tokens
     });
 // we created the schema to allow us more flexibility
 // we can now add instance methods and model methods
@@ -58,6 +58,18 @@ UserSchema.methods.generateAuthToken = function () {
     return user.save()
         .then(() => token); // a token is returned this will be chained by a then call in server.js
 };
+
+UserSchema.methods.removeToken = function (token) {
+    const user = this;
+    return user.update({
+        $pull: { // $pull is a mongoDb operator used to pull out entire elements from the array if a part of that element is matched
+            tokens: { // the array we need to pull out elements from 
+                token   // the condition we need to check to delete the element
+            }
+        }
+    }); // it too returns a promise
+};
+
 
 // model methods are applied on the model as statics
 // the model methods get called by the entire model as 'this' binding
