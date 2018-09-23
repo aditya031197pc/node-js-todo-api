@@ -82,6 +82,24 @@ UserSchema.statics.findByToken = function (token) {
     }); // we are returning a promise to be handled in serverjs
 };
 
+UserSchema.statics.findByCredentials = function (email, password) {
+    const User = this;
+    return User.findOne({ email }).then((user) => { // we must return this promise
+        if (!user) {
+            return Promise.reject();
+        }
+        return new Promise((resolve, reject) => {
+            bcrypt.compare(password, user.password, (err, success) => {
+                if (success) {
+                    resolve(user);
+                } else {
+                    reject();
+                }
+            });
+        });
+    });
+};
+
 // mongoose middleware setup
 // the pre method takes an event and the function to be executed before the event
 UserSchema.pre('save', function (next) {
