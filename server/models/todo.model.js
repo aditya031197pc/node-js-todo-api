@@ -17,6 +17,10 @@ const TodoSchema = new mongoose.Schema({
         // unix timestamp:
         type: Number,
         default: null
+    },
+    _creator: {
+        type: mongoose.Schema.Types.ObjectId,
+        required: true
     }
 });
 const Todo = mongoose.model('Todo', TodoSchema);

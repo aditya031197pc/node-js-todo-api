@@ -22,10 +22,10 @@ app.use(bodyParser.json());
 
 
 // creating a todo on a post request
-app.post('/todos', (req, res) => {
-    // console.log(req.body);
+app.post('/todos', authenticate, (req, res) => {
     const newTodo = new Todo({
-        text: req.body.text
+        text: req.body.text,
+        _creator: req.user._id
     });
 
     newTodo.save().then((doc) => {
@@ -38,8 +38,10 @@ app.post('/todos', (req, res) => {
 
 
 // returning all todos using get request
-app.get('/todos', (req, res) => {
-    Todo.find().then(todos => {
+app.get('/todos', authenticate, (req, res) => {
+    Todo.find({
+        _creator: req.user._id
+    }).then(todos => {
         res.send({ todos });
     }, err => {
         res.status(400).send(err);
@@ -49,14 +51,17 @@ app.get('/todos', (req, res) => {
 
 // handling a request for a particular todo by its id
 
-app.get('/todos/:id', (req, res) => {
+app.get('/todos/:id', authenticate, (req, res) => {
     const id = req.params.id;
 
     if (!ObjectID.isValid(id)) {
         // if the objectID requested is invalid
         return res.status(404).send(); // we send nothing back here
     }
-    Todo.findById(id).then((todo) => {
+    Todo.findOne({
+        _id: id,
+        _creator: req.user._id
+    }).then((todo) => {
         if (!todo) {
             // if id does not exist in Database
             return res.status(404).send({}); // we send an empty object here
@@ -68,26 +73,30 @@ app.get('/todos/:id', (req, res) => {
 
 // deleting a particular todo using its id
 
-app.delete('/todos/:id', (req, res) => {
+app.delete('/todos/:id', authenticate, (req, res) => {
     const id = req.params.id;
 
     if (!ObjectID.isValid(id)) {
         // if the objectID requested is invalid
         return res.status(404).send(); // we send nothing back here
     }
-    Todo.findByIdAndRemove(id).then((todo) => {
+    const some = Todo.findOneAndRemove({
+        _id: id,
+        _creator: req.user._id
+    }, (err, todo) => {
+        if (err) {
+            res.status(400).send()
+        }
         if (!todo) {
-            // if id does not exist in Database
             return res.status(404).send({}); // we send an empty object here
         }
-        // if the id exists
         res.send({ todo });
-    }).catch(e => res.status(400).send());
+    });
 });
 
 // updating a todo only allowing text and completed field to be updated
 
-app.patch('/todos/:id', (req, res) => {
+app.patch('/todos/:id', authenticate, (req, res) => {
     const id = req.params.id;
     const body = _.pick(req.body, ['text', 'completed']); // the user can only modify these properties
     if (!ObjectID.isValid(id)) {
@@ -100,7 +109,7 @@ app.patch('/todos/:id', (req, res) => {
         body.completed = false;
         body.completedAt = null;
     }
-    Todo.findByIdAndUpdate(id, { $set: body }, { new: true }).then((todo) => {
+    Todo.findOneAndUpdate({ _id: id, _creator: req.user._id }, { $set: body }, { new: true }).then((todo) => {
         if (!todo) {
             res.status(404).send();
         }
@@ -129,13 +138,13 @@ app.get('/users/me', authenticate, (req, res) => {
 app.post('/users/login', (req, res) => {
     const body = _.pick(req.body, ['email', 'password']);
     User.findByCredentials(body.email, body.password)
-    .then( (user) => {
-       return user.generateAuthToken().then((token) => { // using return here keeps the chain alive ie in case of any errors the catch phrase will be executed
-        res.header('x-auth', token).send(user);
-       });
-    }).catch( (e) => {
-        res.status(400).send();
-    });
+        .then((user) => {
+            return user.generateAuthToken().then((token) => { // using return here keeps the chain alive ie in case of any errors the catch phrase will be executed
+                res.header('x-auth', token).send(user);
+            });
+        }).catch((e) => {
+            res.status(400).send();
+        });
 });
 
 // DELETE /users/me/token
@@ -144,7 +153,7 @@ app.post('/users/login', (req, res) => {
 app.delete('/users/me/token', authenticate, (req, res) => {
     req.user.removeToken(req.token).then(() => {
         res.status(200).send();
-    }).catch( (e) => {
+    }).catch((e) => {
         res.status(400).send();
     });
 });

@@ -5,6 +5,7 @@ const jwt = require('jsonwebtoken');
 
 const userOneId = new ObjectID();
 const userTwoId = new ObjectID();
+
 const users = [{
     _id: userOneId,
     email: 'aditya@example.com',
@@ -16,17 +17,23 @@ const users = [{
 }, {
     _id: userTwoId,
     email: 'gen@example.com',
-    password: 'usertwopass'
+    password: 'usertwopass',
+    tokens: [{
+        access: 'auth',
+        token: jwt.sign({ _id: userTwoId, access: 'auth' }, 'abc123').toString()
+    }]
 }];
 
 const todos = [{
     _id: new ObjectID(),
-    text: "dummy todo one"
+    text: "dummy todo one",
+    _creator: userOneId
 }, {
     _id: new ObjectID(),
     text: "dummy todo two",
     completed: true,
-    completedAt: 333
+    completedAt: 333,
+    _creator: userTwoId
 }];
 
 const populateTodos = (done) => { // done is required for async tasks
@@ -39,10 +46,10 @@ const populateTodos = (done) => { // done is required for async tasks
 const populateUsers = (done) => {
     User.remove({})
         .then(() => {
-            const userOne = new User(users[0]).save(); // this was required so that the middleware is run to hash passwords
-            const userTwo = new User(users[1]).save();
-            // Promise.all takes an array of promises and when all the promises get resolved , 'then' is executed
-            return Promise.all([userOne, userTwo]);
+            const userOne = new User(users[0]).save() // this was required so that the middleware is run to hash passwords
+            .then(() => {
+                const userTwo = new User(users[1]).save();}); // doing this to maintain the order in which the users will be saved
+            return Promise.all([userOne]);
         }).then(() => done());
 };
 
