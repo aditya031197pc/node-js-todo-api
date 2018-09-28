@@ -50,7 +50,7 @@ UserSchema.methods.toJSON = function () { // we are overriding this function to 
 UserSchema.methods.generateAuthToken = function () {
     const user = this;
     const access = 'auth'; // for web only 
-    const token = jwt.sign({ _id: user._id, access }, 'abc123').toString(); // token generated using the token id
+    const token = jwt.sign({ _id: user._id, access }, process.env.JWT_SECRET).toString(); // token generated using the token id
 
     // pushing the token created to tokens array
     // access will be different for different platforms
@@ -78,7 +78,7 @@ UserSchema.statics.findByToken = function (token) {
     let decoded; // initially set to undefined
 
     try {
-        decoded = jwt.verify(token, 'abc123');
+        decoded = jwt.verify(token, process.env.JWT_SECRET);
     } catch (e) {
         // return new Promise((resolve, reject) => {
         //     reject(); // when the token is not verified, then() will never be called in server.js and we can handle the error in catch
